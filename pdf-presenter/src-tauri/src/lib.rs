@@ -115,6 +115,91 @@ pub fn run() {
             .build(),
         )?;
       }
+      
+      let app_handle = app.handle().clone();
+      
+      // 비동기 로컬 TCP 리스너 백그라운드 스레드 기동 (Port 3010)
+      tokio::spawn(async move {
+        use tokio::net::TcpListener;
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        
+        let listener = match TcpListener::bind("127.0.0.1:3010").await {
+          Ok(l) => l,
+          Err(e) => {
+            eprintln!("로컬 API 서버 바인딩 실패 (포트 3010 점유 중일 수 있음): {}", e);
+            return;
+          }
+        };
+        
+        println!("외부 제어용 로컬 API 서버 기동 성공: http://127.0.0.1:3010");
+        
+        loop {
+          let (mut socket, _) = match listener.accept().await {
+            Ok(s) => s,
+            Err(_) => continue,
+          };
+          
+          let app_handle = app_handle.clone();
+          tokio::spawn(async move {
+            let mut buf = [0; 1024];
+            let n = match socket.read(&mut buf).await {
+              Ok(n) if n > 0 => n,
+              _ => return,
+            };
+            
+            let req_text = String::from_utf8_lossy(&buf[..n]);
+            
+            // HTTP Request 라인 파싱 (POST /api/...)
+            let mut lines = req_text.lines();
+            let req_line = lines.next().unwrap_or("");
+            let parts: Vec<&str> = req_line.split_whitespace().collect();
+            
+            if parts.len() >= 2 && parts[0] == "POST" {
+              let path = parts[1];
+              
+              // 경로 분석 및 명령 매핑
+              let command = if path == "/api/page/next" {
+                Some("page-next")
+              } else if path == "/api/page/prev" {
+                Some("page-prev")
+              } else if path == "/api/scroll/down" {
+                Some("scroll-down")
+              } else if path == "/api/scroll/up" {
+                Some("scroll-up")
+              } else if path == "/api/scroll/stop" {
+                Some("scroll-stop")
+              } else if path == "/api/window/open" {
+                Some("window-open")
+              } else if path.starts_with("/api/settings/aspect/") {
+                // aspect ratio 파라미터 추출
+                let ratio = path.trim_start_matches("/api/settings/aspect/");
+                Some(ratio) // 예: "16-9", "4-3", "free"
+              } else if path.starts_with("/api/settings/theme/") {
+                // bgTheme 파라미터 추출
+                let theme = path.trim_start_matches("/api/settings/theme/");
+                Some(theme) // 예: "transparent", "chromakey", "dark", "light"
+              } else {
+                None
+              };
+              
+              if let Some(cmd) = command {
+                // 프론트엔드로 조종 신호 0ms 포워딩!
+                let _ = app_handle.emit("api-command", cmd);
+              }
+            }
+            
+            // HTTP 응답 헤더 전송 (CORS 개방 및 JSON 응답)
+            let response = "HTTP/1.1 200 OK\r\n\
+                            Content-Type: application/json\r\n\
+                            Access-Control-Allow-Origin: *\r\n\
+                            Connection: close\r\n\r\n\
+                            {\"status\":\"success\"}";
+            let _ = socket.write_all(response.as_bytes()).await;
+            let _ = socket.flush().await;
+          });
+        }
+      });
+      
       Ok(())
     })
     .invoke_handler(tauri::generate_handler![open_presenter_window, get_available_monitors]) // 두 개 커맨드 모두 등록!

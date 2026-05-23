@@ -1105,5 +1105,62 @@ document.addEventListener('mouseup', (e) => {
   }
 });
 
+// 3. 외부 스크립팅 API 명령어 수신 및 실행 핸들러 이식
+if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__ !== undefined) {
+  import('@tauri-apps/api/event').then(eventMod => {
+    eventMod.listen('api-command', (e) => {
+      const payload = e.payload;
+      console.log('외부 API 원격 제어 수신:', payload);
+      
+      switch (payload) {
+        case 'page-next':
+          scrollToPage(Math.min(state.pageCount, state.activePage + 1));
+          break;
+        case 'page-prev':
+          scrollToPage(Math.max(1, state.activePage - 1));
+          break;
+        case 'scroll-down':
+          state.keysPressed.ArrowDown = true;
+          if (!scrollLoopActive) {
+            scrollLoopActive = true;
+            requestAnimationFrame(runScrollLoop);
+          }
+          break;
+        case 'scroll-up':
+          state.keysPressed.ArrowUp = true;
+          if (!scrollLoopActive) {
+            scrollLoopActive = true;
+            requestAnimationFrame(runScrollLoop);
+          }
+          break;
+        case 'scroll-stop':
+          state.keysPressed.ArrowUp = false;
+          state.keysPressed.ArrowDown = false;
+          break;
+        case 'window-open':
+          btnOpenPresenter.click();
+          break;
+        case '16-9':
+        case '4-3':
+        case 'free':
+          // 종횡비 원격 변경
+          const aspectBtn = document.querySelector(`.aspect-ratio-selector .btn[data-aspect="${payload}"]`);
+          if (aspectBtn) aspectBtn.click();
+          break;
+        case 'transparent':
+        case 'chromakey':
+        case 'dark':
+        case 'light':
+          // 배경 테마 원격 변경
+          const themeBtn = document.querySelector(`.bg-theme-selector .btn[data-theme="${payload}"]`);
+          if (themeBtn) themeBtn.click();
+          break;
+      }
+    });
+  }).catch(err => {
+    console.warn('Tauri event 모듈 로딩 실패 (브라우저 폴백):', err);
+  });
+}
+
 
 
