@@ -104,6 +104,15 @@ async fn open_presenter_window(app: AppHandle, target_monitor_name: Option<Strin
   Ok(())
 }
 
+// 3. 현재 스폰되어 있는 송출창을 안전하게 종료하는 Rust 네이티브 커맨드
+#[tauri::command]
+async fn close_presenter_window(app: AppHandle) -> Result<(), String> {
+  if let Some(presenter_win) = app.get_webview_window("antigravity-pdf-presenter") {
+    let _ = presenter_win.close();
+  }
+  Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -216,7 +225,7 @@ pub fn run() {
       
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![open_presenter_window, get_available_monitors]) // 두 개 커맨드 모두 등록!
+    .invoke_handler(tauri::generate_handler![open_presenter_window, get_available_monitors, close_presenter_window]) // 세 개 커맨드 모두 등록!
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

@@ -67,6 +67,7 @@ const state = {
   smoothing: parseFloat(localStorage.getItem('pdf-smoothing') || '0.85'),
   bgTheme: localStorage.getItem('pdf-bg-theme') || 'transparent',
   presenterWindow: null,
+  isPresenterOpen: false,
   
   // 소수점 이하(0.2px 등) 미세 스크롤 보존을 위한 고정밀 스크롤 좌표계
   currentScrollTop: 0,
@@ -678,6 +679,14 @@ function runScrollLoop() {
 
 // 키보드 다운 이벤트 감지 (연속 스크롤 및 단발 핫키)
 document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    if (state.isPresenterOpen) {
+      closePresenterWindow();
+      e.preventDefault();
+      return;
+    }
+  }
+
   if (!state.pdfDoc) return;
   if (document.activeElement.tagName === 'INPUT') return;
 
@@ -742,13 +751,26 @@ document.addEventListener('keyup', (e) => {
    3. Broadcast Channel 실시간 무지연 송출 로직
    ========================================== */
 
-// 1) 신규 연결 송출창에 즉시 로드된 PDF 전송
-btnOpenPresenter.addEventListener('click', () => {
+// 1) 뷰어창 버튼 텍스트 및 상태 갱신 함수
+function updatePresenterButtonState(isOpen) {
+  state.isPresenterOpen = isOpen;
+  if (isOpen) {
+    btnOpenPresenter.innerHTML = '🛑 송출용 뷰어 창 닫기';
+    btnOpenPresenter.classList.add('presenter-active');
+  } else {
+    btnOpenPresenter.innerHTML = '📺 송출용 뷰어 창 열기';
+    btnOpenPresenter.classList.remove('presenter-active');
+  }
+}
+
+// 2) 뷰어창 열기 실행
+function openPresenterWindow() {
   if (tauriCore) {
     const selectedMonitor = monitorSelect.value;
     // [Tauri 네이티브 실행]: 사용자가 드롭다운에서 선택한 OS 모니터로 1-Click 풀스크린 오픈!
     tauriCore.invoke('open_presenter_window', { targetMonitorName: selectedMonitor })
       .then(() => {
+        updatePresenterButtonState(true);
         setTimeout(() => {
           syncPDFToPresenter();
           broadcastViewportState();
@@ -771,12 +793,45 @@ btnOpenPresenter.addEventListener('click', () => {
     }
     
     state.presenterWindow = window.open(url, 'antigravity-pdf-presenter', specs);
+    updatePresenterButtonState(true);
     
     setTimeout(() => {
       syncPDFToPresenter();
       broadcastViewportState();
       broadcastRenderSettings();
     }, 800);
+  }
+}
+
+// 3) 뷰어창 닫기 실행
+function closePresenterWindow() {
+  if (tauriCore) {
+    // Tauri 네이티브 닫기 호출
+    tauriCore.invoke('close_presenter_window')
+      .then(() => {
+        updatePresenterButtonState(false);
+      })
+      .catch(err => {
+        console.error('Tauri 네이티브 송출창 종료 에러:', err);
+      });
+  } else {
+    // 웹 브라우저 폴백 닫기
+    if (state.presenterWindow && !state.presenterWindow.closed) {
+      state.presenterWindow.close();
+    }
+    state.presenterWindow = null;
+    updatePresenterButtonState(false);
+  }
+  // 채널을 통해서도 닫힘 상태 브로드캐스트
+  channel.postMessage({ type: 'PRESENTER_CLOSED' });
+}
+
+// 4) 신규 연결 송출창 버튼 클릭 이벤트 바인딩 (토글)
+btnOpenPresenter.addEventListener('click', () => {
+  if (state.isPresenterOpen) {
+    closePresenterWindow();
+  } else {
+    openPresenterWindow();
   }
 });
 
@@ -830,11 +885,14 @@ function broadcastRenderSettings() {
 // 송출창에서 로드 완료 신호(PING)를 보내올 경우 대응
 channel.onmessage = function(e) {
   if (e.data.type === 'PRESENTER_READY') {
+    updatePresenterButtonState(true);
     syncPDFToPresenter();
     setTimeout(() => {
       broadcastViewportState();
       broadcastRenderSettings();
     }, 300);
+  } else if (e.data.type === 'PRESENTER_CLOSED') {
+    updatePresenterButtonState(false);
   }
 };
 
@@ -1161,6 +1219,27 @@ if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__ !== undefined) {
     console.warn('Tauri event 모듈 로딩 실패 (브라우저 폴백):', err);
   });
 }
+
+// 4. Tauri 및 웹 환경 뷰어창 강제 종료 감지 및 자동 동기화
+setInterval(async () => {
+  if (tauriCore) {
+    try {
+      const { getAllWebviewWindows } = await import('@tauri-apps/api/window');
+      const windows = await getAllWebviewWindows();
+      const presenterExists = windows.some(w => w.label === 'antigravity-pdf-presenter');
+      if (state.isPresenterOpen !== presenterExists) {
+        updatePresenterButtonState(presenterExists);
+      }
+    } catch (err) {
+      // 무시
+    }
+  } else {
+    const presenterExists = !!(state.presenterWindow && !state.presenterWindow.closed);
+    if (state.isPresenterOpen !== presenterExists) {
+      updatePresenterButtonState(presenterExists);
+    }
+  }
+}, 500);
 
 
 

@@ -334,3 +334,26 @@ if (presenterMode === 'fullscreen') {
     }
   });
 }
+
+// 6) ESC 누르면 뷰어창 끄기(닫기) 및 닫힘 신호 채널 송출
+document.addEventListener('keydown', async (e) => {
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    channel.postMessage({ type: 'PRESENTER_CLOSED' });
+    
+    if (window.__TAURI_INTERNALS__ !== undefined) {
+      // Tauri 환경
+      const { getCurrentWindow } = await import('@tauri-apps/api/window');
+      const appWindow = getCurrentWindow();
+      appWindow.close();
+    } else {
+      // 일반 웹 브라우저 환경
+      window.close();
+    }
+    e.preventDefault();
+  }
+});
+
+// 7) 사용자가 창을 수동으로 닫거나 언로드할 때 닫힘 신호 채널 송출
+window.addEventListener('beforeunload', () => {
+  channel.postMessage({ type: 'PRESENTER_CLOSED' });
+});
