@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timer Overlay</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* 오버레이 전용 투명 배경 오버라이드 */
+    html, body {
+      background: transparent !important;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="overlay-body">
+  <!-- 타이머와 알림을 완전히 다른 독립적인 레이어로 구성하여 개별 absolute position 조절이 가능하도록 조치 -->
+  <div id="overlay-timer-container" class="overlay-container" style="position: absolute; pointer-events: none; display: flex;">
+    <div id="overlay-timer" class="overlay-timer">00:00</div>
+  </div>
+  <div id="overlay-alert-container" class="overlay-container" style="position: absolute; pointer-events: none; display: flex;">
+    <div id="overlay-alert" class="overlay-alert"></div>
+  </div>
+
+  <script src="overlay.js"></script>
+</body>
+</html>

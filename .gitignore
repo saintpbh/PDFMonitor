@@ -1,3 +1,6 @@
 /target
 .DS_Store
 Cargo.lock
+/backup-egui/
+/pdf-presenter-js-archive/
+/homebrew-formula/presentation-timer.rb

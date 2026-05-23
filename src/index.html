@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⏱ 프리미엄 프레젠테이션 타이머</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- 1. 앱 헤더 -->
+    <header class="app-header">
+      <h1 class="app-title">⏱ Presentation Timer</h1>
+      <span id="status-badge" class="status-badge">대기</span>
+    </header>
+
+    <!-- 2. 타이머 시각화 (SVG 원형 진행바) -->
+    <section class="timer-display-section">
+      <div class="svg-progress-container">
+        <svg width="200" height="200">
+          <circle class="progress-ring-circle-bg" cx="100" cy="100" r="88" />
+          <circle id="progress-bar" class="progress-ring-circle" cx="100" cy="100" r="88" stroke-dasharray="552.92" stroke-dashoffset="0" />
+        </svg>
+        <div class="timer-text-container">
+          <div id="timer-digits" class="timer-digits">00:00</div>
+          <div id="timer-sublabel" class="timer-label">Ready</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. 실시간 알림 메시지 카드 (송출형 UX) -->
+    <section class="card">
+      <h2 class="card-title">📢 실시간 알림 메시지</h2>
+      <div class="input-group" style="gap: 8px;">
+        <input type="text" id="alert-message" class="form-input" placeholder="오버레이에 송출할 메시지 입력..." style="flex: 1;">
+        <button id="btn-alert-send" class="btn btn-primary" style="padding: 10px 18px; border-radius: var(--radius-sm); flex: none; font-size: 0.9rem; margin: 0; width: auto;">송출</button>
+        <button id="btn-alert-clear" class="btn btn-secondary" style="padding: 10px 14px; border-radius: var(--radius-sm); flex: none; font-size: 0.9rem; margin: 0; width: auto;">지우기</button>
+      </div>
+    </section>
+
+    <!-- 🖥 시계 출력 화면 선택 카드 (실시간 즉시 제어) -->
+    <section class="card">
+      <h2 class="card-title">🖥 시계 출력 화면 선택</h2>
+      <div class="input-group">
+        <select id="monitor-select" class="form-input" style="appearance: auto; cursor: pointer; padding-right: 24px; font-weight: 500; font-size: 0.85rem;">
+          <option value="">시계 화면 감지 중...</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- 4. 타이머 제어 인터랙션 -->
+    <section class="controls-section">
+      <div class="btn-row">
+        <button id="btn-start" class="btn btn-primary">▶ 시작</button>
+        <button id="btn-pause" class="btn btn-secondary" style="display: none;">⏸ 일시정지</button>
+        <button id="btn-reset" class="btn btn-danger">⏹ 리셋</button>
+      </div>
+      
+      <div class="btn-row">
+        <button id="btn-add-30s" class="btn btn-secondary btn-outline">+30초</button>
+        <button id="btn-add-1m" class="btn btn-secondary btn-outline">+1분</button>
+      </div>
+
+      <!-- 신속 프리셋 카드 -->
+      <div class="card" style="margin-bottom: 0;">
+        <h2 class="card-title">🕐 시간 신속 설정</h2>
+        <div class="preset-grid">
+          <button class="btn btn-secondary btn-outline preset-btn" data-secs="60">1분</button>
+          <button class="btn btn-secondary btn-outline preset-btn" data-secs="120">2분</button>
+          <button class="btn btn-secondary btn-outline preset-btn" data-secs="180">3분</button>
+        </div>
+        
+        <div class="input-group" style="margin-top: 4px;">
+          <input type="number" id="custom-min" class="form-input form-input-short" placeholder="분" min="0" max="999">
+          <span>분</span>
+          <input type="number" id="custom-sec" class="form-input form-input-short" placeholder="초" min="0" max="59">
+          <span>초</span>
+          <button id="btn-apply-custom" class="btn btn-secondary" style="padding: 8px 14px; border-radius: 10px;">적용</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 최하단: 환경 설정 버튼 -->
+    <footer class="app-footer">
+      <button id="btn-settings" class="btn-settings-trigger">
+        ⚙ 환경 설정 열기 (Cmd+,)
+      </button>
+    </footer>
+
+  </div>
+
+  <!-- ⚙ 환경 설정 모달 창 -->
+  <dialog id="settings-dialog">
+    <div class="modal-header">
+      <h2 class="modal-title">⚙ 환경 설정</h2>
+      <button id="btn-close-settings" class="close-modal-btn">&times;</button>
+    </div>
+    
+    <!-- 탭 스위처 헤더 -->
+    <div class="tabs-header">
+      <button class="tab-btn active" data-tab="tab-timer">⏱ 타이머</button>
+      <button class="tab-btn" data-tab="tab-alert">📢 알림</button>
+      <button class="tab-btn" data-tab="tab-alarm">🔔 사운드</button>
+    </div>
+    
+    <div class="modal-body">
+      <!-- 1. 타이머 시계 설정 탭 -->
+      <div id="tab-timer" class="tab-content active">
+        <!-- 위치 (3x3 그리드) -->
+        <div class="setting-row">
+          <span class="setting-row-label">오버레이 3x3 출력 위치</span>
+          <div class="grid-3x3" id="timer-grid-3x3">
+            <button class="pos-btn timer-pos-btn" data-pos="tl"></button>
+            <button class="pos-btn timer-pos-btn" data-pos="tc"></button>
+            <button class="pos-btn timer-pos-btn" data-pos="tr"></button>
+            <button class="pos-btn timer-pos-btn" data-pos="ml"></button>
+            <button class="pos-btn timer-pos-btn" data-pos="mc"></button>
+            <button class="pos-btn timer-pos-btn" data-pos="mr"></button>
+            <button class="pos-btn timer-pos-btn" data-pos="bl"></button>
+            <button class="pos-btn timer-pos-btn" data-pos="bc"></button>
+            <button class="pos-btn timer-pos-btn" data-pos="br"></button>
+          </div>
+        </div>
+        <!-- 상세위치 조절 (X/Y 오프셋) -->
+        <div class="setting-row">
+          <span class="setting-row-label">상세 X축 오프셋: <span id="timer-offset-x-val">20</span>px</span>
+          <input type="range" id="timer-offset-x" min="-500" max="500" value="20" step="1">
+        </div>
+        <div class="setting-row">
+          <span class="setting-row-label">상세 Y축 오프셋: <span id="timer-offset-y-val">20</span>px</span>
+          <input type="range" id="timer-offset-y" min="-500" max="500" value="20" step="1">
+        </div>
+        <!-- 크기 (스케일 배율) -->
+        <div class="setting-row">
+          <span class="setting-row-label">오버레이 크기 배율: <span id="timer-scale-val">1.0</span>배</span>
+          <input type="range" id="timer-scale" min="0.5" max="2.5" value="1.0" step="0.1">
+        </div>
+        <!-- 폰트 크기 -->
+        <div class="setting-row">
+          <span class="setting-row-label">폰트 크기: <span id="timer-font-size-val">5.0</span>rem</span>
+          <input type="range" id="timer-font-size" min="2" max="10" value="5" step="0.5">
+        </div>
+        <!-- 폰트 색상 -->
+        <div class="setting-row">
+          <span class="setting-row-label">폰트 색상</span>
+          <input type="color" id="timer-color" class="form-input" style="height: 40px; padding: 2px; cursor: pointer; border-radius: var(--radius-sm);" value="#00e5ff">
+        </div>
+
+        <!-- 📺 오버레이 창 스타일 설정 -->
+        <div class="setting-divider" style="height: 1px; background: rgba(0,0,0,0.06); margin: 16px 0 8px 0;"></div>
+        <h3 style="font-size: 0.85rem; font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">📺 오버레이 창 배경 설정</h3>
+
+        <!-- 배경 효과 선택 -->
+        <div class="setting-row" style="margin-bottom: 12px;">
+          <span class="setting-row-label">배경 효과</span>
+          <select id="overlay-bg-effect" class="form-input" style="appearance: auto; cursor: pointer; padding: 8px 12px; font-size: 0.8rem; font-weight: 500;">
+            <option value="transparent">완전 투명</option>
+            <option value="blur">배경 흐림 (블러 / Glassmorphism)</option>
+            <option value="solid">배경 채우기 (단색)</option>
+          </select>
+        </div>
+
+        <!-- 배경색 선택 -->
+        <div id="overlay-bg-color-row" class="setting-row" style="margin-bottom: 12px; display: none;">
+          <span class="setting-row-label">배경색</span>
+          <input type="color" id="overlay-bg-color" class="form-input" style="height: 40px; padding: 2px; cursor: pointer; border-radius: var(--radius-sm);" value="#000000">
+        </div>
+
+        <!-- 배경 불투명도 -->
+        <div id="overlay-bg-opacity-row" class="setting-row" style="display: none;">
+          <span class="setting-row-label">배경 불투명도: <span id="overlay-bg-opacity-val">0</span>%</span>
+          <input type="range" id="overlay-bg-opacity" min="0" max="100" value="0">
+        </div>
+      </div>
+      
+      <!-- 2. 실시간 알림 설정 탭 -->
+      <div id="tab-alert" class="tab-content">
+        <!-- 위치 (3x3 그리드) -->
+        <div class="setting-row">
+          <span class="setting-row-label">알림 3x3 출력 위치</span>
+          <div class="grid-3x3" id="alert-grid-3x3">
+            <button class="pos-btn alert-pos-btn" data-pos="tl"></button>
+            <button class="pos-btn alert-pos-btn" data-pos="tc"></button>
+            <button class="pos-btn alert-pos-btn" data-pos="tr"></button>
+            <button class="pos-btn alert-pos-btn" data-pos="ml"></button>
+            <button class="pos-btn alert-pos-btn" data-pos="mc"></button>
+            <button class="pos-btn alert-pos-btn" data-pos="mr"></button>
+            <button class="pos-btn alert-pos-btn" data-pos="bl"></button>
+            <button class="pos-btn alert-pos-btn" data-pos="bc"></button>
+            <button class="pos-btn alert-pos-btn" data-pos="br"></button>
+          </div>
+        </div>
+        <!-- 상세위치 조절 (X/Y 오프셋) -->
+        <div class="setting-row">
+          <span class="setting-row-label">상세 X축 오프셋: <span id="alert-offset-x-val">0</span>px</span>
+          <input type="range" id="alert-offset-x" min="-500" max="500" value="0" step="1">
+        </div>
+        <div class="setting-row">
+          <span class="setting-row-label">상세 Y축 오프셋: <span id="alert-offset-y-val">40</span>px</span>
+          <input type="range" id="alert-offset-y" min="-500" max="500" value="40" step="1">
+        </div>
+        <!-- 크기 (스케일 배율) -->
+        <div class="setting-row">
+          <span class="setting-row-label">알림 크기 배율: <span id="alert-scale-val">1.0</span>배</span>
+          <input type="range" id="alert-scale" min="0.5" max="2.0" value="1.0" step="0.1">
+        </div>
+        <!-- 폰트 크기 -->
+        <div class="setting-row">
+          <span class="setting-row-label">폰트 크기: <span id="alert-font-size-val">1.8</span>rem</span>
+          <input type="range" id="alert-font-size" min="1" max="5" value="1.8" step="0.2">
+        </div>
+        <!-- 폰트 색상 -->
+        <div class="setting-row">
+          <span class="setting-row-label">폰트 색상</span>
+          <input type="color" id="alert-color" class="form-input" style="height: 40px; padding: 2px; cursor: pointer; border-radius: var(--radius-sm);" value="#ff3d00">
+        </div>
+      </div>
+      
+      <!-- 3. 알람과 벨소리 탭 -->
+      <div id="tab-alarm" class="tab-content">
+        <!-- 볼륨 설정 -->
+        <div class="setting-row" style="margin-bottom: 12px;">
+          <span class="setting-row-label">공통 벨소리 볼륨: <span id="sound-volume-val">80</span>%</span>
+          <input type="range" id="sound-volume" min="0" max="100" value="80">
+        </div>
+        
+        <!-- 1차 경고시간설정 + 벨소리 체크 박스 -->
+        <div class="setting-row" style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: var(--radius-md); border: 1px solid rgba(0,0,0,0.04); margin-bottom: 10px;">
+          <div class="switch-group" style="margin-bottom: 8px;">
+            <span class="setting-row-label" style="color: var(--text-main); font-weight: 600; font-size: 0.85rem;">1차 경고 사운드 활성화</span>
+            <label class="switch">
+              <input type="checkbox" id="alarm-sound-enabled-1" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="input-group">
+            <span class="setting-row-label" style="font-size: 0.8rem; min-width: 60px;">경고 시간:</span>
+            <input type="number" id="alarm-warn-level-1" class="form-input form-input-short" value="60" min="0" style="padding: 6px; font-weight: 600; text-align: center;">
+            <span class="setting-row-label" style="font-size: 0.8rem;">초 남았을 때</span>
+          </div>
+        </div>
+        
+        <!-- 2차 경고시간설정 + 벨소리 체크 박스 -->
+        <div class="setting-row" style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: var(--radius-md); border: 1px solid rgba(0,0,0,0.04); margin-bottom: 10px;">
+          <div class="switch-group" style="margin-bottom: 8px;">
+            <span class="setting-row-label" style="color: var(--text-main); font-weight: 600; font-size: 0.85rem;">2차 경고 사운드 활성화</span>
+            <label class="switch">
+              <input type="checkbox" id="alarm-sound-enabled-2" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="input-group">
+            <span class="setting-row-label" style="font-size: 0.8rem; min-width: 60px;">경고 시간:</span>
+            <input type="number" id="alarm-warn-level-2" class="form-input form-input-short" value="30" min="0" style="padding: 6px; font-weight: 600; text-align: center;">
+            <span class="setting-row-label" style="font-size: 0.8rem;">초 남았을 때</span>
+          </div>
+        </div>
+        
+        <!-- 3차 경고시간설정 + 벨소리 체크 박스 -->
+        <div class="setting-row" style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: var(--radius-md); border: 1px solid rgba(0,0,0,0.04);">
+          <div class="switch-group" style="margin-bottom: 8px;">
+            <span class="setting-row-label" style="color: var(--text-main); font-weight: 600; font-size: 0.85rem;">3차 경고 사운드 활성화</span>
+            <label class="switch">
+              <input type="checkbox" id="alarm-sound-enabled-3" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="input-group">
+            <span class="setting-row-label" style="font-size: 0.8rem; min-width: 60px;">경고 시간:</span>
+            <input type="number" id="alarm-warn-level-3" class="form-input form-input-short" value="10" min="0" style="padding: 6px; font-weight: 600; text-align: center;">
+            <span class="setting-row-label" style="font-size: 0.8rem;">초 남았을 때</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Tauri API 및 메인 로직 로드 -->
+  <script src="app.js"></script>
+</body>
+</html>

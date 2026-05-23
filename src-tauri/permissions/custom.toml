@@ -1,0 +1,27 @@
+# 이 파일은 Tauri v2 프론트엔드가 백엔드의 커스텀 Rust 커맨드들을 안전하게 호출(IPC)할 수 있도록
+# 커스텀 권한 식별자(identifier)와 허용 대상 커맨드 목록을 선언합니다.
+
+[[permission]]
+identifier = "allow-get-monitors"
+description = "연결된 모니터 목록을 조회하는 커맨드 허용"
+commands.allow = ["get_monitors"]
+
+[[permission]]
+identifier = "allow-move-overlay-to-monitor"
+description = "오버레이 창을 특정 모니터 공간으로 이동시키는 커맨드 허용"
+commands.allow = ["move_overlay_to_monitor"]
+
+[[permission]]
+identifier = "allow-set-overlay-clickthrough"
+description = "오버레이 마우스 클릭 투과 여부 설정 커맨드 허용"
+commands.allow = ["set_overlay_clickthrough"]
+
+[[permission]]
+identifier = "allow-set-overlay-visible"
+description = "오버레이 창 가시성(노출/은닉) 조작 커맨드 허용"
+commands.allow = ["set_overlay_visible"]
+
+[[permission]]
+identifier = "allow-share-timer-state"
+description = "타이머 실시간 상태 데이터를 오버레이 창으로 동기화하는 커맨드 허용"
+commands.allow = ["share_timer_state"]

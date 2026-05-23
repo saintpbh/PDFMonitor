@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity PDF Studio - Broadcast Controller</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body class="dark-theme">
+  <div id="app" class="app-container">
+    
+    <!-- Top Global Header -->
+    <header class="app-header">
+      <div class="logo">
+        <span class="logo-neon">ANTIGRAVITY</span>
+        <span class="logo-sub">PDF STUDIO</span>
+      </div>
+      <div class="header-status">
+        <span class="status-indicator online"></span>
+        <span class="status-text">Controller Online</span>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <!-- 1. Left Thumbnails sidebar -->
+      <aside class="sidebar-thumbnails">
+        <div class="panel-header">
+          <h3>THUMBNAILS</h3>
+          <span class="badge" id="page-count-badge">0 / 0</span>
+        </div>
+        <div class="thumbnails-list" id="thumbnails-list">
+          <div class="empty-state-text">PDF를 업로드하면<br>썸네일이 이곳에 생성됩니다.</div>
+        </div>
+      </aside>
+
+      <!-- 2. Center Preview Area -->
+      <section class="viewport-preview-area">
+        <div class="panel-header">
+          <h3>MONITOR PREVIEW</h3>
+          <div class="preview-actions">
+            <span class="help-tooltip">💡 PDF 배경을 스크롤하거나 사각형을 드래그하면 배경 문서가 움직입니다.</span>
+          </div>
+        </div>
+        <div class="viewport-wrapper" id="viewport-wrapper" style="position: relative; flex: 1; overflow: hidden;">
+          <div class="canvas-scroll-container" id="canvas-scroll-container">
+            <!-- Continuous rendered pages go here -->
+            <div class="pages-wrapper" id="pages-wrapper">
+              <div class="no-pdf-placeholder">
+                <div class="placeholder-icon">📄</div>
+                <h2>PDF 파일을 불러와 주세요</h2>
+                <p>우측 패널의 [PDF 불러오기]를 통해 문서를 선택하면 고성능 방송 렌더러가 활성화됩니다.</p>
+              </div>
+            </div>
+          </div>
+          <!-- Drag and Drop Overlay -->
+          <div class="drag-drop-overlay" id="drag-drop-overlay">
+            <div class="drag-drop-content">
+              <div class="drag-drop-icon">📥</div>
+              <h3 style="margin: 0 0 8px 0; font-size: 1.25rem; font-weight: 600; text-shadow: 0 0 8px var(--accent-cyan-glow); color: var(--accent-cyan);">새로운 PDF 문서 놓기</h3>
+              <p style="margin: 0; font-size: 0.85rem; color: var(--text-secondary);">여기에 PDF 파일을 드롭하면 즉시 방송 송출이 갱신됩니다.</p>
+            </div>
+          </div>
+          <!-- Viewport Box Overlay (Fixed position on screen!) -->
+          <div class="viewport-box" id="viewport-box" style="display: none; position: absolute; z-index: 100;">
+            <div class="viewport-handle nw"></div>
+            <div class="viewport-handle ne"></div>
+            <div class="viewport-handle sw"></div>
+            <div class="viewport-handle se"></div>
+            <div class="viewport-label">TRANSMIT VIEWPORT</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Right Control Panel -->
+      <aside class="sidebar-controls">
+        <div class="panel-header">
+          <h3>STUDIO CONTROLS</h3>
+        </div>
+        
+        <!-- Document Upload Card -->
+        <div class="control-card upload-card">
+          <h4>DOCUMENT</h4>
+          <div class="upload-buttons-group">
+            <label class="custom-file-upload" style="flex: 1;">
+              <input type="file" id="pdf-file-input" accept="application/pdf" />
+              <span class="upload-icon">📂</span>
+              <span class="upload-text">PDF 불러오기</span>
+            </label>
+            <button class="btn btn-outline" id="btn-load-demo" title="인터넷 연결 없이 로컬 샘플 PDF 로드">
+              ⚡ 데모 로드
+            </button>
+          </div>
+          <div class="file-info" id="file-info">선택된 파일 없음</div>
+        </div>
+
+        <!-- Output Screen Controller -->
+        <div class="control-card">
+          <h4>TRANSMITTER</h4>
+          <div class="settings-group">
+            <label>송출창 모드</label>
+            <div class="presenter-mode-selector" style="display: flex; gap: 8px;">
+              <button class="btn btn-outline active" id="btn-mode-windowed" style="flex: 1; padding: 6px;">창 모드</button>
+              <button class="btn btn-outline" id="btn-mode-fullscreen" style="flex: 1; padding: 6px;">전체창 모드</button>
+            </div>
+          </div>
+          <div class="settings-group" id="monitor-selector-group" style="display: none; margin-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; padding-bottom: 4px;">
+            <label for="monitor-select" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <span>송출 모니터 선택 (OS 감지)</span>
+              <span class="badge" id="monitor-count-badge" style="font-size: 0.65rem; background: rgba(56,189,248,0.1); color: var(--accent-cyan); padding: 2px 6px; border-radius: 50px; font-weight: 600;">1개 감지</span>
+            </label>
+            <select id="monitor-select" style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--accent-cyan); padding: 6px 10px; border-radius: 4px; font-weight: 600; font-family: inherit; font-size: 0.8rem; cursor: pointer; outline: none; transition: border 0.2s;">
+              <option value="auto">🔌 자동 (세컨드 디스플레이)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btn-open-presenter" style="margin-top: 8px;">
+            📺 송출용 뷰어 창 열기
+          </button>
+          <p class="btn-desc">별도의 세컨스크린 모니터로 배치하십시오.</p>
+        </div>
+
+        <!-- Viewport Aspect Ratios -->
+        <div class="control-card">
+          <h4>VIEWPORT ASPECT RATIO</h4>
+          <div class="aspect-ratio-selector">
+            <button class="btn btn-outline active" data-aspect="16-9">16:9 (HD)</button>
+            <button class="btn btn-outline" data-aspect="4-3">4:3 (SD)</button>
+            <button class="btn btn-outline" data-aspect="free">FREE</button>
+          </div>
+        </div>
+
+        <!-- Keyboard Scroll Speed Settings -->
+        <div class="control-card">
+          <h4>KEYBOARD SCROLL SPEED</h4>
+          <div class="settings-group">
+            <label>
+              <span>기본 독서 스크롤 속도 (Reading Speed)</span>
+              <div class="speed-input-container" style="display: flex; align-items: center; gap: 4px;">
+                <input type="number" id="scroll-speed-input" min="0.001" max="10.000" step="0.001" value="0.100" style="width: 70px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--accent-cyan); font-weight: 600; text-align: center; border-radius: 4px; padding: 2px 4px; font-family: monospace;">
+                <span class="speed-unit" style="font-size: 0.75rem; color: var(--text-muted);">px/f</span>
+              </div>
+            </label>
+            <input type="range" id="scroll-speed-slider" min="0.000" max="1.000" step="0.001" value="0.500">
+          </div>
+          <div class="settings-group">
+            <label>
+              <span>시프트 배속 (Shift Speed Multiplier)</span>
+              <div class="speed-input-container" style="display: flex; align-items: center; gap: 4px;">
+                <input type="number" id="scroll-shift-input" min="1.0" max="20.0" step="0.1" value="5.0" style="width: 70px; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--accent-yellow); font-weight: 600; text-align: center; border-radius: 4px; padding: 2px 4px; font-family: monospace;">
+                <span class="speed-unit" style="font-size: 0.75rem; color: var(--text-muted);">x</span>
+              </div>
+            </label>
+            <input type="range" id="scroll-shift-slider" min="1.0" max="20.0" step="0.1" value="5.0">
+          </div>
+          <p class="btn-desc">💡 방향키(↑/↓)를 누르고 있으면 설정한 속도로 부드럽고 천천히 스크롤됩니다.</p>
+        </div>
+
+        <!-- Page Transition Settings -->
+        <div class="control-card">
+          <h4>PAGE TRANSITION</h4>
+          <div class="settings-group">
+            <label>페이지 전환 연출 모드</label>
+            <div class="presenter-mode-selector" style="display: flex; gap: 8px;">
+              <button class="btn btn-outline" id="btn-trans-cut" style="flex: 1; padding: 6px; font-size: 0.8rem;" title="컷: 중간 과정 없이 즉각 순간이동">즉시 (CUT)</button>
+              <button class="btn btn-outline" id="btn-trans-ease" style="flex: 1; padding: 6px; font-size: 0.8rem;" title="스무스: 부드러운 감속 이동">스무스 (EASE)</button>
+              <button class="btn btn-outline active" id="btn-trans-dissolve" style="flex: 1; padding: 6px; font-size: 0.8rem;" title="디졸브: 화면이 우아하게 페이드 전환">디졸브 (FADE)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Render Settings -->
+        <div class="control-card">
+          <h4>RENDER SETTINGS</h4>
+          <div class="settings-group">
+            <label for="smoothing-slider">
+              <span>관성 스무딩 강도 (Smoothness)</span>
+              <span id="smoothing-val">0.85</span>
+            </label>
+            <input type="range" id="smoothing-slider" min="0" max="0.95" step="0.05" value="0.85">
+          </div>
+
+          <div class="settings-group">
+            <label>송출 배경 테마</label>
+            <div class="bg-theme-selector">
+              <button class="btn btn-circle active" data-theme="transparent" title="투명 오버레이">T</button>
+              <button class="btn btn-circle bg-green" data-theme="chromakey" title="크로마키 그린"></button>
+              <button class="btn btn-circle bg-black" data-theme="dark" title="블랙"></button>
+              <button class="btn btn-circle bg-white" data-theme="light" title="화이트"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Debug Monitor -->
+        <div class="control-card debug-card">
+          <h4>STREAM STATUS</h4>
+          <div class="debug-row">
+            <span>Viewport [X, Y]:</span>
+            <span id="debug-coords">0, 0</span>
+          </div>
+          <div class="debug-row">
+            <span>Viewport Size:</span>
+            <span id="debug-size">0 x 0</span>
+          </div>
+          <div class="debug-row">
+            <span>Current Page:</span>
+            <span id="debug-page">Page 1</span>
+          </div>
+          <div class="debug-row">
+            <span>Sync Latency:</span>
+            <span class="text-neon-green" id="debug-latency">&lt; 2ms</span>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

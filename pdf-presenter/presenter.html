@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity PDF Studio - Live Output</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    /* 송출 뷰어 전용 리셋 및 기본 투명 스타일 */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: transparent; /* 크로마키/투명 오버레이 디폴트 */
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+      cursor: none; /* 방송용 마우스 숨김 */
+    }
+
+    .presenter-viewport {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* GPU 가속을 위해 3D transform 레이어를 활성화 */
+    .presenter-canvas-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform-origin: top left;
+      will-change: transform;
+      backface-visibility: hidden;
+      perspective: 1000px;
+    }
+
+    .presenter-canvas {
+      display: block;
+      box-shadow: 0 0 30px rgba(0,0,0,0.3); /* 필요에 따른 고품질 그림자 */
+    }
+
+    /* 크로마키, 다크, 라이트 모드 전환용 바디 클래스 */
+    body.chromakey {
+      background-color: #00ff00 !important;
+    }
+    body.dark {
+      background-color: #111115 !important;
+    }
+    body.light {
+      background-color: #ffffff !important;
+    }
+    body.transparent {
+      background-color: transparent !important;
+    }
+
+    /* 방송 전 대기 화면 상태 */
+    .waiting-screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #0B0B0F;
+      color: #ffffff;
+      z-index: 9999;
+      transition: opacity 0.5s ease;
+    }
+
+    .waiting-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .neon-text {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: 5px;
+      color: #38bdf8;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.5), 0 0 30px rgba(56, 189, 248, 0.2);
+      margin-bottom: 10px;
+    }
+
+    .sub-text {
+      font-size: 1rem;
+      color: #a1a1aa;
+      font-weight: 300;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(56, 189, 248, 0.1);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-top: 30px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="transparent">
+  <div class="presenter-viewport" id="presenter-viewport">
+    
+    <!-- Waiting / Standby Screen -->
+    <div class="waiting-screen" id="waiting-screen">
+      <div class="neon-text">ANTIGRAVITY LIVE</div>
+      <div class="sub-text">컨트롤러에서 PDF를 로드하면 즉시 송출이 개시됩니다.</div>
+      <div class="spinner"></div>
+    </div>
+
+    <!-- GPU 가속 스크롤 및 줌을 수행할 컨테이너 -->
+    <div class="presenter-canvas-container" id="presenter-canvas-container">
+      <!-- 이 내부에 각 페이지의 원본 고화질 Canvas가 차례대로 결합되어 드로우됩니다 -->
+    </div>
+
+  </div>
+
+  <!-- Entry Script -->
+  <script type="module" src="/src/presenter.js"></script>
+</body>
+</html>

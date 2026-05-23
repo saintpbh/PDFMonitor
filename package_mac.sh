@@ -1,57 +1,40 @@
 #!/bin/bash
 set -e
 
-# App name
-APP_NAME="PresentationTimer"
-APP_BUNDLE="${APP_NAME}.app"
+APP_NAME="PDFMonitor"
 DEST_DIR="$HOME/Desktop"
 
-echo "Building release version..."
-cargo build --release
+echo "Vite & Tauri 2.0 빌드 환경(pdf-presenter 디렉토리)으로 진입합니다..."
+cd pdf-presenter
 
-echo "Creating App Bundle..."
-mkdir -p "$APP_BUNDLE/Contents/MacOS"
-mkdir -p "$APP_BUNDLE/Contents/Resources"
+echo "Building release version using Tauri CLI..."
+# Clean old build artifacts to be absolutely sure
+rm -rf src-tauri/target/release
 
-# Copy binary
-cp target/release/presentation-timer "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
+# Use Tauri CLI to build the app
+npx -y @tauri-apps/cli build
 
-# Copy icon
-cp AppIcon.icns "$APP_BUNDLE/Contents/Resources/AppIcon.icns"
+# The built app bundle will be located at:
+# pdf-presenter/src-tauri/target/release/bundle/macos/PDFMonitor.app
+BUILT_APP="src-tauri/target/release/bundle/macos/PDFMonitor.app"
 
-# Create Info.plist
-cat > "$APP_BUNDLE/Contents/Info.plist" << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>${APP_NAME}</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.example.presentationtimer</string>
-    <key>CFBundleName</key>
-    <string>${APP_NAME}</string>
-    <key>CFBundleVersion</key>
-    <string>1.0.0</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-    <key>CFBundleIconFile</key>
-    <string>AppIcon.icns</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>10.13</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-</dict>
-</plist>
-EOF
-
-# Ad-hoc code signing to prevent Gatekeeper errors
-echo "Applying ad-hoc code signing..."
-codesign --force --deep --sign - "$APP_BUNDLE"
-
-# Copy to Desktop
-echo "Moving to Desktop..."
-rm -rf "$DEST_DIR/$APP_BUNDLE"
-mv "$APP_BUNDLE" "$DEST_DIR/"
-
-echo "Successfully created and signed $APP_NAME.app and moved to Desktop!"
+if [ -d "$BUILT_APP" ]; then
+    echo "Applying ad-hoc code signing to the bundled app..."
+    codesign --force --deep --sign - "$BUILT_APP"
+    
+    echo "Moving to Desktop..."
+    rm -rf "$DEST_DIR/${APP_NAME}.app"
+    cp -R "$BUILT_APP" "$DEST_DIR/"
+    
+    # 깃허브 배포용 Zip 압축본 생성
+    echo "배포용 Zip 압축 파일 생성 중..."
+    cd "$DEST_DIR"
+    zip -r "${APP_NAME}-macOS.zip" "${APP_NAME}.app" > /dev/null
+    cd - > /dev/null
+    
+    echo "Successfully built, signed, and moved ${APP_NAME}.app to Desktop!"
+    echo "배포용 zip 아카이브가 바탕화면에 완료되었습니다: ${DEST_DIR}/${APP_NAME}-macOS.zip"
+else
+    echo "Error: Could not find the built app bundle at $BUILT_APP"
+    exit 1
+fi

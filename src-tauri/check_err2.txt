@@ -1,0 +1,2 @@
+   Compiling presentation-timer v1.1.0 (/Users/bongpark/타이머/src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.14s
