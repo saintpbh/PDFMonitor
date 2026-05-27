@@ -15,11 +15,11 @@ echo -e "${BLUE}==> Homebrew Cask 템플릿 생성기 가동...${NC}"
 
 # 버전 정보 가져오기 (Cargo.toml에서 파싱)
 VERSION=$(grep -m 1 '^version = ' pdf-presenter/src-tauri/Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-ZIP_PATH="$HOME/Desktop/PDFMonitor-macOS.zip"
+ZIP_PATH="$HOME/Desktop/PROK PDF STUDIO-macOS.zip"
 
 # 만약 데스크톱에 zip 파일이 없으면 빌드 후 패키징 진행 유도
 if [ ! -f "$ZIP_PATH" ]; then
-    echo -e "${YELLOW}[!] 데스크톱에서 PDFMonitor-macOS.zip 파일을 찾을 수 없습니다.${NC}"
+    echo -e "${YELLOW}[!] 데스크톱에서 PROK PDF STUDIO-macOS.zip 파일을 찾을 수 없습니다.${NC}"
     echo -e "${BLUE}==> macOS 앱 빌드 및 패키징 스크립트(package_mac.sh)를 먼저 가동합니다...${NC}"
     chmod +x package_mac.sh
     ./package_mac.sh
@@ -35,16 +35,16 @@ cask "pdfmonitor" do
   version "${VERSION}"
   sha256 "${SHA256}"
 
-  url "https://github.com/saintpbh/PDFMonitor/releases/download/v#{version}/PDFMonitor-macOS.zip"
-  name "PDFMonitor"
+  url "https://github.com/saintpbh/PDFMonitor/releases/download/v#{version}/PROK%20PDF%20STUDIO-macOS.zip"
+  name "PROK PDF STUDIO"
   desc "High-performance presentation prompter and dual-screen PDF overlay presenter"
   homepage "https://github.com/saintpbh/PDFMonitor"
 
-  app "PDFMonitor.app"
+  app "PROK PDF STUDIO.app"
 
   zap trash: [
-    "~/Library/Application Support/PDFMonitor",
-    "~/Library/Preferences/com.antigravity.pdf.studio.plist",
+    "~/Library/Application Support/PROK PDF STUDIO",
+    "~/Library/Preferences/com.prok.pdf.studio.plist",
   ]
 end
 EOF
