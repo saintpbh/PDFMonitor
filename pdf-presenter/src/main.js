@@ -593,8 +593,12 @@ canvasScrollContainer.addEventListener('scroll', () => {
 function determineCurrentPage() {
   if (state.pageHeights.length === 0) return;
   
+  const style = window.getComputedStyle(canvasScrollContainer);
+  const paddingTop = parseFloat(style.paddingTop) || 0;
+  const effectiveOffsetTop = pagesWrapper.offsetTop >= paddingTop ? pagesWrapper.offsetTop : paddingTop;
+  
   // 현재 뷰포트 중심이 바라보고 있는 PDF 전체 공간 내의 절대 Y좌표
-  const absoluteCenterY = canvasScrollContainer.scrollTop + state.viewport.y - pagesWrapper.offsetTop + (state.viewport.h / 2);
+  const absoluteCenterY = canvasScrollContainer.scrollTop + state.viewport.y - effectiveOffsetTop + (state.viewport.h / 2);
   
   for (const pageObj of state.pageHeights) {
     if (absoluteCenterY >= pageObj.top && absoluteCenterY <= pageObj.bottom) {
@@ -611,8 +615,12 @@ function scrollToPage(pageNum) {
   const pageHeightObj = state.pageHeights[pageNum - 1];
   if (!pageHeightObj) return;
   
+  const style = window.getComputedStyle(canvasScrollContainer);
+  const paddingTop = parseFloat(style.paddingTop) || 0;
+  const effectiveOffsetTop = pagesWrapper.offsetTop >= paddingTop ? pagesWrapper.offsetTop : paddingTop;
+  
   // 뷰포트가 페이지의 가장 상단을 가리키도록 스크롤링 타겟 세팅
-  const targetScrollTop = Math.max(0, pageHeightObj.top - state.viewport.y + pagesWrapper.offsetTop);
+  const targetScrollTop = Math.max(0, pageHeightObj.top - state.viewport.y + effectiveOffsetTop);
   
   // 1. 컨트롤러 자체 뷰포트는 즉각 이동 처리하여 조작자 편의성 극대화
   canvasScrollContainer.scrollTo({
@@ -1041,10 +1049,14 @@ function syncPDFToPresenter() {
 function getViewportRatioState() {
   const totalWidth = pagesWrapper.clientWidth || 800;
   
+  const style = window.getComputedStyle(canvasScrollContainer);
+  const paddingTop = parseFloat(style.paddingTop) || 0;
+  const effectiveOffsetTop = pagesWrapper.offsetTop >= paddingTop ? pagesWrapper.offsetTop : paddingTop;
+  
   // [절대 좌표 매핑 공식]
   // 뷰포트가 바라보는 PDF 전체 가상 캔버스의 절대 X, Y 좌표를 계산합니다.
   const absoluteX = state.viewport.x + canvasScrollContainer.scrollLeft - pagesWrapper.offsetLeft;
-  const absoluteY = state.viewport.y + canvasScrollContainer.scrollTop - pagesWrapper.offsetTop;
+  const absoluteY = state.viewport.y + canvasScrollContainer.scrollTop - effectiveOffsetTop;
   
   // 송출 화면의 가로 너비 기준 비율 환산
   return {

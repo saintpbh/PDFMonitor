@@ -1,6 +1,6 @@
 cask "pdfmonitor" do
-  version "0.3.3"
-  sha256 "065a491fc36c3a78b8fe70fdad7f9648abec15a5981a225597a6bd11331bf270"
+  version "0.3.4"
+  sha256 "5b9dcfd81739a5d42bed39144bbf86960268608e239363f2482de70e6f192261"
 
   url "https://github.com/saintpbh/PDFMonitor/releases/download/v#{version}/PROK%20PDF%20STUDIO-macOS.zip"
   name "PROK PDF STUDIO"
