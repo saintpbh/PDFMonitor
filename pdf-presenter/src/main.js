@@ -286,20 +286,42 @@ async function loadPDF(pdfData) {
     // 페이지 높이 누적값 계산 (연속 뷰포트 매핑용)
     calculatePageHeights();
     
-    // 3. 목차(Outline) 파싱 및 렌더링
+    // 3. 목차(Outline) 파싱 및 렌더링 (가상 페이지 목차 스마트 폴백 결합)
     try {
-      const outline = await state.pdfDoc.getOutline();
-      if (outline && outline.length > 0) {
-        sidebarOutline.style.display = 'flex';
-        await renderOutline(outline);
-      } else {
-        sidebarOutline.style.display = 'none';
-        outlineList.innerHTML = '';
-        outlineCountBadge.textContent = '0개';
+      let outline = await state.pdfDoc.getOutline();
+      
+      // 내장 북마크/목차가 없는 경우, 모든 PDF에서 100% 가용한 가상 목차(전체 페이지 목차)를 동적 생성
+      if (!outline || outline.length === 0) {
+        console.log('내장 목차가 발견되지 않아, 스마트 가상 페이지 목차를 자동 생성합니다.');
+        outline = [];
+        for (let i = 1; i <= state.pageCount; i++) {
+          outline.push({
+            title: `📄 제 ${i} 페이지 (Page ${i})`,
+            virtualPage: i,
+            items: []
+          });
+        }
       }
+      
+      sidebarOutline.style.display = 'flex';
+      await renderOutline(outline);
     } catch (err) {
-      console.warn('PDF 목차 파싱 실패:', err);
-      sidebarOutline.style.display = 'none';
+      console.warn('PDF 목차 파싱 실패, 가상 목차로 스마트 전향합니다:', err);
+      try {
+        const fallbackOutline = [];
+        for (let i = 1; i <= state.pageCount; i++) {
+          fallbackOutline.push({
+            title: `📄 제 ${i} 페이지 (Page ${i})`,
+            virtualPage: i,
+            items: []
+          });
+        }
+        sidebarOutline.style.display = 'flex';
+        await renderOutline(fallbackOutline);
+      } catch (innerErr) {
+        console.error('가상 목차 빌드 실패:', innerErr);
+        sidebarOutline.style.display = 'none';
+      }
     }
     
     // 3. 하단에 투명 유령 페이지(스페이스 여백)를 스크롤 컨테이너에 추가하여 
@@ -364,7 +386,10 @@ async function renderOutline(outline) {
       nodeEl.className = 'outline-node';
       
       // 페이지 변환 사전 해석
-      const pageNum = await getPageNumFromDest(item.dest);
+      let pageNum = item.virtualPage || null;
+      if (!pageNum && item.dest) {
+        pageNum = await getPageNumFromDest(item.dest);
+      }
       if (pageNum) {
         nodeEl.dataset.page = pageNum;
       }
