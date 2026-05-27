@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-APP_NAME="PDFMonitor"
+APP_NAME="PROK PDF STUDIO"
 DEST_DIR="$HOME/Desktop"
 
 echo "Vite & Tauri 2.0 빌드 환경(pdf-presenter 디렉토리)으로 진입합니다..."
@@ -15,8 +15,7 @@ rm -rf src-tauri/target/release
 npx -y @tauri-apps/cli build
 
 # The built app bundle will be located at:
-# pdf-presenter/src-tauri/target/release/bundle/macos/PDFMonitor.app
-BUILT_APP="src-tauri/target/release/bundle/macos/PDFMonitor.app"
+BUILT_APP="src-tauri/target/release/bundle/macos/${APP_NAME}.app"
 
 if [ -d "$BUILT_APP" ]; then
     echo "Applying ad-hoc code signing to the bundled app..."
