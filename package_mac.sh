@@ -36,7 +36,10 @@ if [ -d "$BUILT_APP" ]; then
     echo "배포용 zip 아카이브가 바탕화면에 완료되었습니다: ${DEST_DIR}/${APP_NAME}-macOS.zip"
     
     echo "바탕화면에 복사된 앱을 즉시 실행합니다..."
-    open "$DEST_DIR/${APP_NAME}.app"
+    open "$DEST_DIR/${APP_NAME}.app" || {
+        echo "바탕화면 샌드박스 보안 가드로 인해 프로젝트 작업 디렉토리 내부 원본 앱으로 우회 기동을 실시합니다..."
+        open "$BUILT_APP"
+    }
 else
     echo "Error: Could not find the built app bundle at $BUILT_APP"
     exit 1
