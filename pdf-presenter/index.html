@@ -27,6 +27,17 @@
     </header>
 
     <main class="main-layout">
+      <!-- 0. Left Outline sidebar -->
+      <aside class="sidebar-outline" id="sidebar-outline" style="display: none;">
+        <div class="panel-header">
+          <h3>OUTLINE</h3>
+          <span class="badge" id="outline-count-badge">0개</span>
+        </div>
+        <div class="outline-list" id="outline-list">
+          <div class="empty-state-text">목차가 존재하면<br>이곳에 트리 형태로 표시됩니다.</div>
+        </div>
+      </aside>
+
       <!-- 1. Left Thumbnails sidebar -->
       <aside class="sidebar-thumbnails">
         <div class="panel-header">
@@ -98,9 +109,51 @@
           <div class="file-info" id="file-info">선택된 파일 없음</div>
         </div>
 
+        <!-- Settings Modal Trigger Card -->
+        <div class="control-card">
+          <h4>SYSTEM CONFIG</h4>
+          <button class="btn btn-primary" id="btn-open-settings" style="margin-top: 4px; padding: 12px; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>⚙️</span> 스튜디오 설정
+          </button>
+          <p class="btn-desc">송출 모드, 스무딩, 방향키 속도, 전환 연출 등 세부 환경을 제어합니다.</p>
+        </div>
+
+        <!-- System Debug Monitor -->
+        <div class="control-card debug-card" style="margin-top: auto; margin-bottom: 16px;">
+          <h4>STREAM STATUS</h4>
+          <div class="debug-row">
+            <span>Viewport [X, Y]:</span>
+            <span id="debug-coords">0, 0</span>
+          </div>
+          <div class="debug-row">
+            <span>Viewport Size:</span>
+            <span id="debug-size">0 x 0</span>
+          </div>
+          <div class="debug-row">
+            <span>Current Page:</span>
+            <span id="debug-page">Page 1</span>
+          </div>
+          <div class="debug-row">
+            <span>Sync Latency:</span>
+            <span class="text-neon-green" id="debug-latency">&lt; 2ms</span>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- 4. Premium Neon Settings Modal -->
+  <div class="modal-overlay" id="settings-modal" style="display: none;">
+    <div class="modal-content">
+      <header class="modal-header">
+        <h3 class="modal-title">⚙️ STUDIO SYSTEM CONFIG</h3>
+        <button class="btn-close-modal" id="btn-close-settings">×</button>
+      </header>
+      <div class="modal-body">
+        
         <!-- Output Screen Controller -->
         <div class="control-card">
-          <h4>TRANSMITTER</h4>
+          <h4>TRANSMITTER (송출 창 제어)</h4>
           <div class="settings-group">
             <label>송출창 모드</label>
             <div class="presenter-mode-selector" style="display: flex; gap: 8px;">
@@ -120,12 +173,12 @@
           <button class="btn btn-primary" id="btn-open-presenter" style="margin-top: 8px;">
             📺 송출용 뷰어 창 열기
           </button>
-          <p class="btn-desc">별도의 세컨스크린 모니터로 배치하십시오.</p>
+          <p class="btn-desc">별도의 세컨스크린 모니터에 송출창이 강제 풀스크린 오픈됩니다.</p>
         </div>
 
         <!-- Viewport Aspect Ratios -->
         <div class="control-card">
-          <h4>VIEWPORT ASPECT RATIO</h4>
+          <h4>VIEWPORT ASPECT RATIO (송출창 종횡비)</h4>
           <div class="aspect-ratio-selector">
             <button class="btn btn-outline active" data-aspect="16-9">16:9 (HD)</button>
             <button class="btn btn-outline" data-aspect="4-3">4:3 (SD)</button>
@@ -135,7 +188,7 @@
 
         <!-- Keyboard Scroll Speed Settings -->
         <div class="control-card">
-          <h4>KEYBOARD SCROLL SPEED</h4>
+          <h4>KEYBOARD SCROLL SPEED (방향키 독서 속도)</h4>
           <div class="settings-group">
             <label>
               <span>기본 독서 스크롤 속도 (Reading Speed)</span>
@@ -161,7 +214,7 @@
 
         <!-- Page Transition Settings -->
         <div class="control-card">
-          <h4>PAGE TRANSITION</h4>
+          <h4>PAGE TRANSITION (대본 페이지 전환 연출)</h4>
           <div class="settings-group">
             <label>페이지 전환 연출 모드</label>
             <div class="presenter-mode-selector" style="display: flex; gap: 8px;">
@@ -174,7 +227,7 @@
 
         <!-- Render Settings -->
         <div class="control-card">
-          <h4>RENDER SETTINGS</h4>
+          <h4>RENDER SETTINGS (송출 렌더링 세부 셋팅)</h4>
           <div class="settings-group">
             <label for="smoothing-slider">
               <span>관성 스무딩 강도 (Smoothness)</span>
@@ -194,28 +247,8 @@
           </div>
         </div>
 
-        <!-- System Debug Monitor -->
-        <div class="control-card debug-card">
-          <h4>STREAM STATUS</h4>
-          <div class="debug-row">
-            <span>Viewport [X, Y]:</span>
-            <span id="debug-coords">0, 0</span>
-          </div>
-          <div class="debug-row">
-            <span>Viewport Size:</span>
-            <span id="debug-size">0 x 0</span>
-          </div>
-          <div class="debug-row">
-            <span>Current Page:</span>
-            <span id="debug-page">Page 1</span>
-          </div>
-          <div class="debug-row">
-            <span>Sync Latency:</span>
-            <span class="text-neon-green" id="debug-latency">&lt; 2ms</span>
-          </div>
-        </div>
-      </aside>
-    </main>
+      </div>
+    </div>
   </div>
 
   <!-- Entry Script -->

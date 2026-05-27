@@ -35,7 +35,7 @@ const state = {
   isTransitioning: false, // 페이지 전환 트랜지션 진행 여부 (디졸브 시 스크롤 무시 가드)
   
   // 가상 평면 기준 해상도
-  basePlaneWidth: 1200 // 고화질 렌더링을 위한 기본 가로 평면 해상도
+  basePlaneWidth: 2400 // 고화질 렌더링을 위한 기본 가로 평면 해상도
 };
 
 // Broadcast Channel 수신

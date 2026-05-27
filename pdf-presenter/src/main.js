@@ -110,6 +110,12 @@ const pdfFileInput = document.getElementById('pdf-file-input');
 const fileInfo = document.getElementById('file-info');
 const btnOpenPresenter = document.getElementById('btn-open-presenter');
 const thumbnailsList = document.getElementById('thumbnails-list');
+const sidebarOutline = document.getElementById('sidebar-outline');
+const outlineList = document.getElementById('outline-list');
+const outlineCountBadge = document.getElementById('outline-count-badge');
+const btnOpenSettings = document.getElementById('btn-open-settings');
+const btnCloseSettings = document.getElementById('btn-close-settings');
+const settingsModal = document.getElementById('settings-modal');
 const pagesWrapper = document.getElementById('pages-wrapper');
 const canvasScrollContainer = document.getElementById('canvas-scroll-container');
 const viewportBox = document.getElementById('viewport-box');
@@ -280,6 +286,22 @@ async function loadPDF(pdfData) {
     // 페이지 높이 누적값 계산 (연속 뷰포트 매핑용)
     calculatePageHeights();
     
+    // 3. 목차(Outline) 파싱 및 렌더링
+    try {
+      const outline = await state.pdfDoc.getOutline();
+      if (outline && outline.length > 0) {
+        sidebarOutline.style.display = 'flex';
+        await renderOutline(outline);
+      } else {
+        sidebarOutline.style.display = 'none';
+        outlineList.innerHTML = '';
+        outlineCountBadge.textContent = '0개';
+      }
+    } catch (err) {
+      console.warn('PDF 목차 파싱 실패:', err);
+      sidebarOutline.style.display = 'none';
+    }
+    
     // 3. 하단에 투명 유령 페이지(스페이스 여백)를 스크롤 컨테이너에 추가하여 
     // 마지막 페이지의 최하단부까지 송출 뷰포트 영역으로 매끄럽게 끌어올려 송출할 수 있게 합니다.
     const existingGhost = canvasScrollContainer.querySelector('.pdf-ghost-page');
@@ -299,6 +321,109 @@ async function loadPDF(pdfData) {
     console.error('PDF 로드 중 오류 발생:', error);
     alert('PDF 문서를 파싱하지 못했습니다.');
   }
+}
+
+// PDF.js 목차 목적지 정보로부터 실제 1-indexed 페이지 번호를 매핑 추출하는 고정밀 파서
+async function getPageNumFromDest(dest) {
+  if (!dest) return null;
+  
+  let destRef = dest;
+  if (typeof dest === 'string') {
+    destRef = await state.pdfDoc.getDestination(dest);
+  }
+  
+  if (Array.isArray(destRef) && destRef.length > 0) {
+    const pageRef = destRef[0];
+    if (pageRef && typeof pageRef === 'object') {
+      try {
+        const pageIndex = await state.pdfDoc.getPageIndex(pageRef);
+        return pageIndex + 1; // 1-indexed
+      } catch (err) {
+        console.warn('목차 레퍼런스 인덱스 변환 에러:', err);
+      }
+    } else if (typeof pageRef === 'number') {
+      return pageRef + 1;
+    }
+  }
+  return null;
+}
+
+// 목차 렌더링 및 개수 뱃지 갱신 메인 엔트리
+async function renderOutline(outline) {
+  outlineList.innerHTML = '';
+  let totalCount = 0;
+  
+  // 재귀적으로 계층형 트리 그리기
+  async function buildTree(items, parentElement) {
+    for (const item of items) {
+      totalCount++;
+      const itemContainer = document.createElement('div');
+      itemContainer.className = 'outline-item';
+      
+      const nodeEl = document.createElement('div');
+      nodeEl.className = 'outline-node';
+      
+      // 페이지 변환 사전 해석
+      const pageNum = await getPageNumFromDest(item.dest);
+      if (pageNum) {
+        nodeEl.dataset.page = pageNum;
+      }
+      
+      // 토글 버튼 (하위 자식이 있는 경우만)
+      const hasChildren = item.items && item.items.length > 0;
+      if (hasChildren) {
+        const toggleEl = document.createElement('span');
+        toggleEl.className = 'outline-toggle';
+        toggleEl.textContent = '▼';
+        nodeEl.appendChild(toggleEl);
+        
+        toggleEl.addEventListener('click', (e) => {
+          e.stopPropagation(); // 클릭 전파 차단
+          toggleEl.classList.toggle('collapsed');
+          const childContainer = itemContainer.querySelector('.outline-children');
+          if (childContainer) {
+            childContainer.classList.toggle('collapsed');
+          }
+        });
+      } else {
+        const bulletEl = document.createElement('span');
+        bulletEl.className = 'outline-toggle';
+        bulletEl.style.opacity = '0.3';
+        bulletEl.textContent = '•';
+        nodeEl.appendChild(bulletEl);
+      }
+      
+      const labelEl = document.createElement('span');
+      labelEl.className = 'outline-label';
+      labelEl.textContent = item.title;
+      nodeEl.appendChild(labelEl);
+      
+      itemContainer.appendChild(nodeEl);
+      
+      // 노드 클릭 시 해당 페이지로 즉시/스무스 송출 전환
+      nodeEl.addEventListener('click', () => {
+        if (pageNum) {
+          scrollToPage(pageNum);
+          // 하이라이트 클래스 갱신
+          document.querySelectorAll('.outline-node').forEach(n => n.classList.remove('active'));
+          nodeEl.classList.add('active');
+        }
+      });
+      
+      // 자식 노드 재귀 처리
+      if (hasChildren) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'outline-children';
+        await buildTree(item.items, childrenContainer);
+        itemContainer.appendChild(childrenContainer);
+      }
+      
+      parentElement.appendChild(itemContainer);
+    }
+  }
+  
+  await buildTree(outline, outlineList);
+  outlineCountBadge.textContent = `${totalCount}개`;
 }
 
 // 썸네일 생성
@@ -494,10 +619,20 @@ function updateActiveThumbnail(pageNum) {
     }
   });
   
-  // 2. 상단 뱃지 페이지 넘버 업데이트
+  // 2. 목차 트리 노드 하이라이트 동기화
+  document.querySelectorAll('.outline-node').forEach(node => {
+    if (parseInt(node.dataset.page) === pageNum) {
+      node.classList.add('active');
+      node.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+      node.classList.remove('active');
+    }
+  });
+  
+  // 3. 상단 뱃지 페이지 넘버 업데이트
   pageCountBadge.textContent = `${pageNum} / ${state.pageCount}`;
   
-  // 3. 디버그 및 텍스트 상태 업데이트
+  // 4. 디버그 및 텍스트 상태 업데이트
   debugPage.textContent = `Page ${pageNum}`;
 }
 
@@ -1241,5 +1376,17 @@ setInterval(async () => {
   }
 }, 500);
 
+// [스튜디오 설정 모달 제어 이벤트 리스너]
+btnOpenSettings.addEventListener('click', () => {
+  settingsModal.classList.add('active');
+});
 
+btnCloseSettings.addEventListener('click', () => {
+  settingsModal.classList.remove('active');
+});
 
+settingsModal.addEventListener('click', (e) => {
+  if (e.target === settingsModal) {
+    settingsModal.classList.remove('active');
+  }
+});
