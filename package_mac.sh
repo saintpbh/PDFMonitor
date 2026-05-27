@@ -34,6 +34,9 @@ if [ -d "$BUILT_APP" ]; then
     
     echo "Successfully built, signed, and moved ${APP_NAME}.app to Desktop!"
     echo "배포용 zip 아카이브가 바탕화면에 완료되었습니다: ${DEST_DIR}/${APP_NAME}-macOS.zip"
+    
+    echo "바탕화면에 복사된 앱을 즉시 실행합니다..."
+    open "$DEST_DIR/${APP_NAME}.app"
 else
     echo "Error: Could not find the built app bundle at $BUILT_APP"
     exit 1
