@@ -96,6 +96,7 @@ const state = {
   
   // 드래그/리사이즈 인터랙션 상태
   isDragging: false,
+  isBgScrolling: false,
   isResizing: false,
   resizeDirection: '',
   dragStart: { x: 0, y: 0 },
@@ -668,13 +669,8 @@ viewportBox.addEventListener('mousedown', (e) => {
     state.isResizing = true;
     state.resizeDirection = e.target.className.split(' ')[1]; // nw, ne, sw, se
   } else {
-    // 2. 드래그 모드 진입 (배경 스크롤링)
+    // 2. 드래그 모드 진입 (노란 사각형 자체를 마우스로 잡고 X축, Y축 가로세로 자유롭게 직접 이동!)
     state.isDragging = true;
-    // 클릭 시점의 배경 스크롤 위치 기록
-    state.scrollStart = {
-      top: canvasScrollContainer.scrollTop,
-      left: canvasScrollContainer.scrollLeft
-    };
   }
   
   state.dragStart.x = e.clientX;
@@ -682,17 +678,53 @@ viewportBox.addEventListener('mousedown', (e) => {
   state.viewportStart = { ...state.viewport };
   
   e.preventDefault();
+  e.stopPropagation(); // 이벤트가 뒷배경 스크롤러로 흘러서 동시에 배경 스크롤이 터지는 것 차단!
+});
+
+// 노란색 뷰포트 사각형 바깥의 빈 영역(컨테이너)을 잡고 드래그하면, "뒤의 PDF 문서 배경"이 스무스하게 스크롤링!
+viewportWrapper.addEventListener('mousedown', (e) => {
+  // 사용자가 노란 사각형이나 핸들을 누른 것이 아닐 때만 집행!
+  if (e.target === viewportWrapper || e.target === canvasScrollContainer || e.target.closest('#pages-wrapper')) {
+    state.isBgScrolling = true;
+    state.dragStart.x = e.clientX;
+    state.dragStart.y = e.clientY;
+    
+    state.scrollStart = {
+      top: canvasScrollContainer.scrollTop,
+      left: canvasScrollContainer.scrollLeft
+    };
+    
+    e.preventDefault();
+  }
 });
 
 document.addEventListener('mousemove', (e) => {
-  if (!state.isDragging && !state.isResizing) return;
+  if (!state.isDragging && !state.isResizing && !state.isBgScrolling) return;
   
   const dx = e.clientX - state.dragStart.x;
   const dy = e.clientY - state.dragStart.y;
   
   if (state.isDragging) {
-    // [사용자 핵심 요청 사항]: 사각형을 드래그하면, 사각형이 움직이는 게 아니라 
-    // "배경의 PDF 파일"이 마치 스마트폰 터치 스크롤처럼 우아하게 반대 방향으로 끌려 움직입니다!
+    // [사용자 핵심 피드백]: 사각형을 잡고 끌면, 사각형 자체가 가로/세로 양방향으로 미끄러지듯 스무스하게 이동!
+    let nextX = state.viewportStart.x + dx;
+    let nextY = state.viewportStart.y + dy;
+    
+    const wrapperWidth = viewportWrapper.clientWidth || 800;
+    const wrapperHeight = viewportWrapper.clientHeight || 500;
+    
+    // 사각형이 뷰포트 컨테이너 영역 밖으로 가출하는 것을 0.1px의 오차도 없이 단단히 물리 가드!
+    nextX = Math.max(0, Math.min(wrapperWidth - state.viewport.w, nextX));
+    nextY = Math.max(0, Math.min(wrapperHeight - state.viewport.h, nextY));
+    
+    state.viewport.x = nextX;
+    state.viewport.y = nextY;
+    
+    updateViewportDOM();
+    broadcastViewportState();
+  }
+  
+  if (state.isBgScrolling) {
+    // 사각형 바깥 빈 공간을 드래그하면, 뒤의 PDF 문서 배경이 모바일 터치 스크롤처럼 끌려 스크롤!
     canvasScrollContainer.scrollTop = state.scrollStart.top - dy;
     canvasScrollContainer.scrollLeft = state.scrollStart.left - dx;
   }
@@ -706,7 +738,7 @@ document.addEventListener('mousemove', (e) => {
     
     const dir = state.resizeDirection;
     const minSize = 100;
-    const wrapperWidth = document.getElementById('viewport-wrapper').clientWidth;
+    const wrapperWidth = viewportWrapper.clientWidth;
     
     if (dir === 'se') {
       nextW = Math.max(minSize, state.viewportStart.w + dx);
@@ -789,6 +821,7 @@ document.addEventListener('mousemove', (e) => {
 
 document.addEventListener('mouseup', () => {
   state.isDragging = false;
+  state.isBgScrolling = false;
   state.isResizing = false;
 });
 

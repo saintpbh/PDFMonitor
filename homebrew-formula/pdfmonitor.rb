@@ -1,6 +1,6 @@
 cask "pdfmonitor" do
-  version "0.3.2"
-  sha256 "a09e2c9bf6a3dc847ca9ded2a767a738d94f84a784b92c43219648ebaf1ef1c2"
+  version "0.3.3"
+  sha256 "466c7670d8b5de9e20a611ddd34142f5fbd1e9b0151162edc19ed4ed50566383"
 
   url "https://github.com/saintpbh/PDFMonitor/releases/download/v#{version}/PDFMonitor-macOS.zip"
   name "PDFMonitor"
