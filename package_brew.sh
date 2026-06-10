@@ -42,6 +42,12 @@ cask "pdfmonitor" do
 
   app "PROK PDF STUDIO.app"
 
+  postflight do
+    system_command "xattr",
+                   args: ["-cr", "#{appdir}/PROK PDF STUDIO.app"],
+                   sudo: false
+  end
+
   zap trash: [
     "~/Library/Application Support/PROK PDF STUDIO",
     "~/Library/Preferences/com.prok.pdf.studio.plist",
