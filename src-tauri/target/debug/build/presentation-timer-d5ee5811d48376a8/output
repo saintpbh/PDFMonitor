@@ -1,0 +1,14 @@
+cargo:rerun-if-env-changed=TAURI_CONFIG
+cargo:rustc-check-cfg=cfg(desktop)
+cargo:rustc-cfg=desktop
+cargo:rustc-check-cfg=cfg(mobile)
+cargo:rerun-if-changed=/Users/bongpark/타이머/src-tauri/tauri.conf.json
+cargo:rustc-env=TAURI_ANDROID_PACKAGE_NAME_APP_NAME=timer
+cargo:rustc-env=TAURI_ANDROID_PACKAGE_NAME_PREFIX=com_saintpbh
+cargo:rustc-check-cfg=cfg(dev)
+cargo:rustc-cfg=dev
+cargo:rerun-if-changed=permissions
+cargo:PERMISSION_FILES_PATH=/Users/bongpark/타이머/src-tauri/target/debug/build/presentation-timer-d5ee5811d48376a8/out/app-manifest/__app__-permission-files
+cargo:rerun-if-changed=capabilities
+cargo:rerun-if-env-changed=REMOVE_UNUSED_COMMANDS
+cargo:rustc-env=TAURI_ENV_TARGET_TRIPLE=aarch64-apple-darwin
